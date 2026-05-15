@@ -8,8 +8,117 @@
 #include <climits>
 #include <stdexcept>
 #include <cmath>
+#include <unordered_map>
+#include <cstdlib>
 
 using namespace std;
+
+string current_lang;
+
+string get_locale() {
+    const char* lc_all = getenv("LC_ALL");
+    if (lc_all && lc_all[0]) return string(lc_all);
+    const char* lang = getenv("LANG");
+    if (lang && lang[0]) return string(lang);
+    return "en";
+}
+
+bool starts_with(const string& s, const string& prefix) {
+    return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
+}
+
+string detect_lang(const string& locale) {
+    if (starts_with(locale, "zh")) return "zh";
+    return "en";
+}
+
+struct Strings {
+    unordered_map<string, unordered_map<string, string>> m;
+    Strings() {
+        m["en"]["usage"] = "Usage: headtail [OPTIONS]...";
+        m["en"]["options"] = "Options:";
+        m["en"]["opt_n"] = "  -n [NUM]               Line mode (default), display NUM lines at head/tail.";
+        m["en"]["opt_c"] = "  -c [NUM]               Byte/Char mode, display NUM bytes at head/tail.";
+        m["en"]["opt_head"] = "  -h, --head NUM         Specify the number of lines/bytes for the head.";
+        m["en"]["opt_tail"] = "  -t, --tail NUM         Specify the number of lines/bytes for the tail.";
+        m["en"]["opt_input"] = "  -i, --input FILE       Read from FILE instead of standard input.";
+        m["en"]["opt_show_size"] = "  -s, --show-size        Show omitted size with auto-scaling unit (KiB, MiB, etc).";
+        m["en"]["opt_byte"] = "  --byte                 Force showing omitted size in raw bytes.";
+        m["en"]["opt_help"] = "  --help                 Show this help message.";
+        m["en"]["err_invalid_arg"] = "Error: Invalid argument \"{1}\" for {0}";
+        m["en"]["err_mode_duplicated"] = "Error: Mode duplicated.";
+        m["en"]["err_missing_arg"] = "Error: Missing argument for {0}";
+        m["en"]["err_is_folder"] = "Error: \"{0}\" is a folder";
+        m["en"]["err_permission"] = "Error: permission denied.";
+        m["en"]["err_unknown_arg"] = "Error: Unknown argument {0}";
+        m["en"]["err_memory"] = "Error: Memory limit exceeded. Tail size too large for current RAM.";
+        m["en"]["omit_lines"] = "... ({0} lines omitted) ...";
+        m["en"]["omit_bytes"] = "... ({0} chars omitted) ...";
+        m["en"]["omit_size"] = "... ({1} bytes has been omitted) ...";
+        m["en"]["omit_size_unit"] = "... ({1} {2} has been omitted) ...";
+        m["en"]["units_bytes"] = "bytes";
+        m["en"]["units_kib"] = "KiB";
+        m["en"]["units_mib"] = "MiB";
+        m["en"]["units_gib"] = "GiB";
+        m["en"]["units_tib"] = "TiB";
+
+        m["zh"]["usage"] = "用法: headtail [选项]...";
+        m["zh"]["options"] = "选项:";
+        m["zh"]["opt_n"] = "  -n [NUM]               行模式（默认），显示头/尾各 NUM 行。";
+        m["zh"]["opt_c"] = "  -c [NUM]               字节模式，显示头/尾各 NUM 字节。";
+        m["zh"]["opt_head"] = "  -h, --head NUM         指定头部的行/字节数。";
+        m["zh"]["opt_tail"] = "  -t, --tail NUM         指定尾部的行/字节数。";
+        m["zh"]["opt_input"] = "  -i, --input 文件       从指定文件读取而非标准输入。";
+        m["zh"]["opt_show_size"] = "  -s, --show-size        显示省略大小（自动单位 KiB, MiB 等）。";
+        m["zh"]["opt_byte"] = "  --byte                 强制以原始字节显示省略大小。";
+        m["zh"]["opt_help"] = "  --help                 显示此帮助信息。";
+        m["zh"]["err_invalid_arg"] = "错误: 参数 \"{1}\" 对 {0} 无效";
+        m["zh"]["err_mode_duplicated"] = "错误: 模式重复指定。";
+        m["zh"]["err_missing_arg"] = "错误: {0} 缺少参数";
+        m["zh"]["err_is_folder"] = "错误: \"{0}\" 是一个文件夹";
+        m["zh"]["err_permission"] = "错误: 权限不足。";
+        m["zh"]["err_unknown_arg"] = "错误: 未知的参数 {0}";
+        m["zh"]["err_memory"] = "错误: 内存限制超出。当前 RAM 不足以支持如此大的尾部大小。";
+        m["zh"]["omit_lines"] = "... ({0} 行已省略) ...";
+        m["zh"]["omit_bytes"] = "... ({0} 字符已省略) ...";
+        m["zh"]["omit_size"] = "... ({1} 字节已省略) ...";
+        m["zh"]["omit_size_unit"] = "... ({1} {2} 已省略) ...";
+        m["zh"]["units_bytes"] = "字节";
+        m["zh"]["units_kib"] = "KiB";
+        m["zh"]["units_mib"] = "MiB";
+        m["zh"]["units_gib"] = "GiB";
+        m["zh"]["units_tib"] = "TiB";
+    }
+    string get(const string& lang, const string& key) {
+        auto lit = m.find(lang);
+        if (lit == m.end()) lit = m.find("en");
+        auto kit = lit->second.find(key);
+        if (kit == lit->second.end()) return key;
+        return kit->second;
+    }
+    string get(const string& lang, const string& key, const string& a0) {
+        string s = get(lang, key);
+        size_t p;
+        while ((p = s.find("{0}")) != string::npos) s.replace(p, 3, a0);
+        while ((p = s.find("{1}")) != string::npos) s.replace(p, 3, a0);
+        return s;
+    }
+    string get(const string& lang, const string& key, const string& a0, const string& a1) {
+        string s = get(lang, key);
+        size_t p;
+        while ((p = s.find("{0}")) != string::npos) s.replace(p, 3, a0);
+        while ((p = s.find("{1}")) != string::npos) s.replace(p, 3, a1);
+        return s;
+    }
+    string get(const string& lang, const string& key, const string& a0, const string& a1, const string& a2) {
+        string s = get(lang, key);
+        size_t p;
+        while ((p = s.find("{0}")) != string::npos) s.replace(p, 3, a0);
+        while ((p = s.find("{1}")) != string::npos) s.replace(p, 3, a1);
+        while ((p = s.find("{2}")) != string::npos) s.replace(p, 3, a2);
+        return s;
+    }
+} strings;
 
 bool is_known_flag(const string& s) {
     return s == "-h" || s == "--head" || s == "-t" || s == "--tail" ||
@@ -17,32 +126,41 @@ bool is_known_flag(const string& s) {
            s == "-s" || s == "--show-size" || s == "--byte" || s == "--help";
 }
 
+void err(const string& key) {
+    cerr << strings.get(current_lang, key) << "\n";
+    exit(1);
+}
+void err(const string& key, const string& a0) {
+    cerr << strings.get(current_lang, key, a0) << "\n";
+    exit(1);
+}
+void err(const string& key, const string& a0, const string& a1) {
+    cerr << strings.get(current_lang, key, a0, a1) << "\n";
+    exit(1);
+}
+
 uint64_t parse_num(const string& val, const string& arg_name) {
     if (!val.empty() && val[0] == '-') {
-        cerr << "Error: Invaild argument \"" << val << "\" for " << arg_name << "\n";
-        exit(1);
+        err("err_invalid_arg", arg_name, val);
     }
     try {
         double d = std::stod(val);
         if (d < 0) {
-            cerr << "Error: Invaild argument \"" << val << "\" for " << arg_name << "\n";
-            exit(1);
+            err("err_invalid_arg", arg_name, val);
         }
         if (d >= (double)ULLONG_MAX) return ULLONG_MAX;
         return static_cast<uint64_t>(d);
     } catch (...) {
-        cerr << "Error: Invaild argument \"" << val << "\" for " << arg_name << "\n";
-        exit(1);
+        err("err_invalid_arg", arg_name, val);
     }
 }
 
-// 重点修改 1：在省略提示的前后都加上了换行符 \n
 void print_omitted_size(uint64_t bytes, bool force_byte) {
     if (force_byte) {
-        cout << "\n... (" << bytes << " bytes has been omittd) ...\n";
+        cout << "\n" << strings.get(current_lang, "omit_size", "", to_string(bytes)) << "\n";
         return;
     }
-    const char* units[] = {"bytes", "KiB", "MiB", "GiB", "TiB"};
+    const char* unit_keys[] = {"units_bytes", "units_kib", "units_mib", "units_gib", "units_tib"};
     int unit_idx = 0;
     double size = bytes;
     while (size >= 1024.0 && unit_idx < 4) {
@@ -50,10 +168,9 @@ void print_omitted_size(uint64_t bytes, bool force_byte) {
         unit_idx++;
     }
     if (unit_idx == 0) {
-        cout << "\n... (" << bytes << " bytes has been omittd) ...\n";
+        cout << "\n" << strings.get(current_lang, "omit_size", "", to_string(bytes)) << "\n";
     } else {
-        cout << "\n... (" << std::fixed << std::setprecision(2) << size 
-             << " " << units[unit_idx] << " has been omittd) ...\n";
+        cout << "\n" << strings.get(current_lang, "omit_size_unit", "", to_string(bytes), strings.get(current_lang, unit_keys[unit_idx])) << "\n";
     }
 }
 
@@ -64,7 +181,7 @@ class ByteRingBuffer {
     bool full = false;
 public:
     ByteRingBuffer(uint64_t cap) : capacity(cap) {}
-    
+
     void push(const char* data, size_t len) {
         if (capacity == 0) return;
         try {
@@ -99,11 +216,11 @@ public:
                 }
             }
         } catch (const std::bad_alloc&) {
-            cerr << "Error: Memory limit exceeded. Tail size too large for current RAM.\n";
+            cerr << strings.get(current_lang, "err_memory") << "\n";
             exit(1);
         }
     }
-    
+
     void print() const {
         if (!full) {
             std::cout.write(buf.data(), buf.size());
@@ -112,12 +229,11 @@ public:
             std::cout.write(buf.data(), start);
         }
     }
-    
+
     uint64_t size() const {
         return full ? capacity : buf.size();
     }
 
-    // 新增：获取缓冲区的最后一个字符，用于判断末尾换行
     char get_last_char() const {
         if (size() == 0) return '\n';
         if (!full) return buf.back();
@@ -127,25 +243,25 @@ public:
 };
 
 void print_help() {
-    cout << "Usage: headtail [OPTIONS]...\n"
-         << "Options:\n"
-         << "  -n [NUM]               Line mode (default), display NUM lines at head/tail.\n"
-         << "  -c [NUM]               Byte/Char mode, display NUM bytes at head/tail.\n"
-         << "  -h, --head NUM         Specify the number of lines/bytes for the head.\n"
-         << "  -t, --tail NUM         Specify the number of lines/bytes for the tail.\n"
-         << "  -i, --input FILE       Read from FILE instead of standard input.\n"
-         << "  -s, --show-size        Show omitted size with auto-scaling unit (KiB, MiB, etc).\n"
-         << "  --byte                 Force showing omitted size in raw bytes.\n"
-         << "  --help                 Show this help message.\n";
+    cout << strings.get(current_lang, "usage") << "\n"
+         << strings.get(current_lang, "options") << "\n"
+         << strings.get(current_lang, "opt_n") << "\n"
+         << strings.get(current_lang, "opt_c") << "\n"
+         << strings.get(current_lang, "opt_head") << "\n"
+         << strings.get(current_lang, "opt_tail") << "\n"
+         << strings.get(current_lang, "opt_input") << "\n"
+         << strings.get(current_lang, "opt_show_size") << "\n"
+         << strings.get(current_lang, "opt_byte") << "\n"
+         << strings.get(current_lang, "opt_help") << "\n";
 }
 
 int main(int argc, char* argv[]) {
+    current_lang = detect_lang(get_locale());
+
     bool mode_lines = false;
     bool mode_chars = false;
     uint64_t head_count = 10;
     uint64_t tail_count = 10;
-    bool head_set = false;
-    bool tail_set = false;
     bool show_size = false;
     bool force_byte = false;
     string input_file = "";
@@ -154,10 +270,10 @@ int main(int argc, char* argv[]) {
         string arg = argv[i];
         if (arg == "-n" || arg == "-c") {
             if (arg == "-n") {
-                if (mode_chars) { cerr << "Error: Mode duplicated.\n"; exit(1); }
+                if (mode_chars) err("err_mode_duplicated");
                 mode_lines = true;
             } else {
-                if (mode_lines) { cerr << "Error: Mode duplicated.\n"; exit(1); }
+                if (mode_lines) err("err_mode_duplicated");
                 mode_chars = true;
             }
             if (i + 1 < argc) {
@@ -167,40 +283,35 @@ int main(int argc, char* argv[]) {
                     uint64_t val = parse_num(next_arg, arg);
                     head_count = val;
                     tail_count = val;
-                    head_set = true;
-                    tail_set = true;
                 }
             }
         } else if (arg == "-h" || arg == "--head") {
-            if (i + 1 >= argc) { cerr << "Error: Missing argument for " << arg << "\n"; exit(1); }
+            if (i + 1 >= argc) err("err_missing_arg", arg);
             string next_arg = argv[++i];
             if (is_known_flag(next_arg)) {
-                cerr << "Error: Invaild argument \"" << next_arg << "\" for " << arg << "\n"; exit(1);
+                err("err_invalid_arg", arg, next_arg);
             }
             head_count = parse_num(next_arg, arg);
-            head_set = true;
         } else if (arg == "-t" || arg == "--tail") {
-            if (i + 1 >= argc) { cerr << "Error: Missing argument for " << arg << "\n"; exit(1); }
+            if (i + 1 >= argc) err("err_missing_arg", arg);
             string next_arg = argv[++i];
             if (is_known_flag(next_arg)) {
-                cerr << "Error: Invaild argument \"" << next_arg << "\" for " << arg << "\n"; exit(1);
+                err("err_invalid_arg", arg, next_arg);
             }
             tail_count = parse_num(next_arg, arg);
-            tail_set = true;
         } else if (arg == "-i" || arg == "--input") {
-            if (i + 1 >= argc) { cerr << "Error: Missing argument for " << arg << "\n"; exit(1); }
+            if (i + 1 >= argc) err("err_missing_arg", arg);
             input_file = argv[++i];
         } else if (arg == "-s" || arg == "--show-size") {
             show_size = true;
         } else if (arg == "--byte") {
             force_byte = true;
-            show_size = true; 
+            show_size = true;
         } else if (arg == "--help") {
             print_help();
             return 0;
         } else {
-            cerr << "Error: Unknown argument " << arg << "\n";
-            exit(1);
+            err("err_unknown_arg", arg);
         }
     }
 
@@ -213,13 +324,11 @@ int main(int argc, char* argv[]) {
     if (!input_file.empty()) {
         std::error_code ec;
         if (std::filesystem::is_directory(input_file, ec)) {
-            cerr << "Error: \"" << input_file << "\" is a folder\n";
-            exit(1);
+            err("err_is_folder", input_file);
         }
         file_in.open(input_file, std::ios::binary);
         if (!file_in) {
-            cerr << "Error: permission denied.\n";
-            exit(1);
+            err("err_permission");
         }
         in = &file_in;
     }
@@ -227,7 +336,7 @@ int main(int argc, char* argv[]) {
     uint64_t total_bytes = 0;
     uint64_t head_printed = 0;
     char chunk[8192];
-    char last_printed_char = '\n'; // 新增：全局追踪最后打印的字符
+    char last_printed_char = '\n';
 
     if (mode_lines) {
         uint64_t total_lines = 0;
@@ -274,10 +383,9 @@ int main(int argc, char* argv[]) {
                 uint64_t omitted_bytes = total_bytes - head_bytes_printed - tail_bytes_stored;
                 print_omitted_size(omitted_bytes, force_byte);
             } else {
-                // 重点修改 2：在非 size 模式下的提示前后也加上 \n
-                cout << "\n... (" << (total_lines - head_printed - tail_buffer.size()) << " lines omitted) ...\n";
+                cout << "\n" << strings.get(current_lang, "omit_lines", to_string(total_lines - head_printed - tail_buffer.size())) << "\n";
             }
-            last_printed_char = '\n'; // 提示语以 \n 结尾
+            last_printed_char = '\n';
         }
 
         for (const auto& l : tail_buffer) {
@@ -285,21 +393,19 @@ int main(int argc, char* argv[]) {
             if (!l.empty()) last_printed_char = l.back();
         }
 
-        // 重点修改 3：末尾缺失 \n 时自动补齐
         if (last_printed_char != '\n') cout << '\n';
 
         if (head_count + tail_count >= total_lines) return 1;
         return 0;
 
     } else {
-        // CHAR MODE
         ByteRingBuffer tail_buf(tail_count);
 
         while (in->read(chunk, sizeof(chunk)) || in->gcount() > 0) {
             size_t len = in->gcount();
             total_bytes += len;
             size_t chunk_pos = 0;
-            
+
             if (head_printed < head_count) {
                 uint64_t need = head_count - head_printed;
                 uint64_t take = std::min((uint64_t)len, need);
@@ -308,7 +414,7 @@ int main(int argc, char* argv[]) {
                 head_printed += take;
                 chunk_pos += take;
             }
-            
+
             if (chunk_pos < len) {
                 tail_buf.push(chunk + chunk_pos, len - chunk_pos);
             }
@@ -319,8 +425,7 @@ int main(int argc, char* argv[]) {
                 uint64_t omitted_bytes = total_bytes - head_printed - tail_buf.size();
                 print_omitted_size(omitted_bytes, force_byte);
             } else {
-                // 重点修改 2：在非 size 模式下的提示前后也加上 \n
-                cout << "\n... (" << (total_bytes - head_printed - tail_buf.size()) << " chars omitted) ...\n";
+                cout << "\n" << strings.get(current_lang, "omit_bytes", to_string(total_bytes - head_printed - tail_buf.size())) << "\n";
             }
             last_printed_char = '\n';
         }
@@ -330,7 +435,6 @@ int main(int argc, char* argv[]) {
             last_printed_char = tail_buf.get_last_char();
         }
 
-        // 重点修改 3：末尾缺失 \n 时自动补齐
         if (last_printed_char != '\n') cout << '\n';
 
         if (head_count + tail_count >= total_bytes) return 1;

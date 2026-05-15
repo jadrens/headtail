@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?define ProductName = "headtail" ?>
+  <?define ProductVersion = "1.0.0" ?>
+  <?define ProductLanguage = "1033" ?>
+  <?define Manufacturer = "headtail" ?>
+
+  <Product Id="*" Name="$(var.ProductName)" Language="$(var.ProductLanguage)"
+           Version="$(var.ProductVersion)" Manufacturer="$(var.Manufacturer)"
+           UpgradeCode="B5E5F5A1-4F4A-5B6C-7D8E-9F0A1B2C3D4E">
+
+    <Package InstallerVersion="500" Compressed="yes" />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="ProductFeature" Title="$(var.ProductName)" Level="1">
+      <ComponentRef Id="headtail.exe" />
+      <ComponentRef Id="AddToPath" />
+    </Feature>
+
+    <Directory Id="INSTALLDIR" Name="$(var.ProductName)">
+      <Component Id="headtail.exe" Guid="A1B2C3D4-E5F6-7890-ABCD-EF1234567890">
+        <File Id="headtail.exe" Name="headtail.exe" Source="headtail.exe" />
+      </Component>
+    </Directory>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLDIR" Name="$(var.ProductName)" />
+      </Directory>
+      <Directory Id="PATHDIRECTORY" Name="PATH">
+        <Component Id="AddToPath" Guid="B2C3D4E5-F6A7-8901-BCDE-F12345678901" NeverOverwrite="yes">
+          <Environment Id="PATH" Name="PATH" Value="[INSTALLDIR]" Permanent="no" Part="first" Action="set" />
+        </Component>
+      </Directory>
+    </Directory>
+
+    <MajorUpgrade Schedule="afterInstallExecute" MigrateFeatureStates="yes" />
+    <WiX Variable="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+    <UIPromptText="Please choose the installation directory." />
+
+  </Product>
+</Wix>
