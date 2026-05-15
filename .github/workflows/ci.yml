@@ -99,4 +99,4 @@ jobs:
       - name: Test byte mode
         run: |
           dd if=/dev/zero of=/tmp/test.bin bs=100 count=1 2>/dev/null
-          ./build/headtail -c 20 /tmp/test.bin | grep -q " omitted "
+          ./build/headtail -c 20 /tmp/test.bin | grep -q "chars omitted"
