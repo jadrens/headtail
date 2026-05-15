@@ -5,9 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(headtail main.cpp)
+add_executable(headtail main.cpp src/i18n/i18n.cpp src/i18n/en.cpp src/i18n/zh.cpp)
 
 target_compile_options(headtail PRIVATE -Wall -Wextra)
+
+target_include_directories(headtail PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 install(TARGETS headtail DESTINATION bin)
 
