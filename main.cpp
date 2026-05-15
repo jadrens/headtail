@@ -207,6 +207,8 @@ static void parse_args(int argc, char* argv[], AppState& state) {
         } else if (arg == "--help") {
             print_help();
             exit(0);
+        } else if (arg[0] != '-') {
+            state.input_file = arg;
         } else {
             err_exit("err_unknown_arg", arg.c_str());
         }
