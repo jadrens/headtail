@@ -1,0 +1,102 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Create packages
+        run: |
+          cd build
+          cpack -G RPM
+          cpack -G DEB
+          cpack -G TGZ
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: |
+            build/*.rpm
+            build/*.deb
+            build/*.tar.gz
+            build/headtail
+
+  build-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MinGW
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64 cmake
+
+      - name: Configure CMake
+        run: |
+          cmake -B build-windows \
+            -DCMAKE_SYSTEM_NAME=Windows \
+            -DCMAKE_CXX_COMPILER=i686-w64-mingw32-g++ \
+            -DCMAKE_RC_COMPILER=i686-w64-mingw32-wrc \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
+
+      - name: Build
+        run: cmake --build build-windows --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: build-windows/headtail.exe
+
+  test:
+    needs: build-linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Linux binary
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-packages
+          path: build/
+
+      - name: Test help
+        run: |
+          chmod +x build/headtail
+          ./build/headtail --help
+
+      - name: Test i18n English
+        run: LANG=en_US.UTF-8 ./build/headtail --help | grep -q "Usage"
+
+      - name: Test i18n Chinese
+        run: LANG=zh_CN.UTF-8 ./build/headtail --help | grep -q "用法"
+
+      - name: Test line mode
+        run: |
+          echo -e "line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10\nline11\nline12\nline13\nline14\nline15" > /tmp/test.txt
+          ./build/headtail -n 3 /tmp/test.txt | grep -q "line1"
+          ./build/headtail -n 3 /tmp/test.txt | grep -q "line13"
+
+      - name: Test head/tail split
+        run: |
+          echo -e "line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10\nline11\nline12\nline13\nline14\nline15" > /tmp/test.txt
+          ./build/headtail -h 5 -t 3 /tmp/test.txt | grep -q "line1"
+          ./build/headtail -h 5 -t 3 /tmp/test.txt | grep -q "line13"
+
+      - name: Test byte mode
+        run: |
+          dd if=/dev/zero of=/tmp/test.bin bs=100 count=1 2>/dev/null
+          ./build/headtail -c 20 /tmp/test.bin | grep -q " omitted "
