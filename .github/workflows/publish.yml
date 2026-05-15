@@ -46,8 +46,7 @@ jobs:
           TAG="${{ github.event.inputs.version }}-${{ env.DATE }}"
           gh release create "$TAG" \
             --title "headtail $TAG" \
-            --notes "Nightly build $TAG" \
-            --draft
+            --notes "Nightly build $TAG"
 
       - name: Upload Linux binary
         env:
@@ -91,4 +90,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.event.inputs.version }}-${{ env.DATE }}"
-          gh release edit "$TAG" --latest
+          gh release edit "$TAG" --latest || true
