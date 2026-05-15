@@ -19,7 +19,7 @@ jobs:
         run: echo "date=$(date +%Y%m%d)" >> $GITHUB_OUTPUT
 
       - name: Set version
-        run: echo "VERSION=${{ github.event.inputs.version }}-${{ steps.date.outputs.date }}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${{ github.event.inputs.version }}-${{ steps.date.outputs.date }}" >> $GITHUB_ENV
 
       - name: Build Linux
         run: |
@@ -29,7 +29,7 @@ jobs:
           cpack -G RPM
           cpack -G DEB
           cpack -G TGZ
-          cp headtail headtail-$VERSION-linux-x86_64
+          cp headtail headtail-${{ env.VERSION }}-linux-x86_64
 
       - name: Build Windows
         run: |
@@ -41,43 +41,43 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
           cmake --build build-windows --config Release
-          cp build-windows/headtail.exe headtail-$VERSION-windows.exe
+          cp build-windows/headtail.exe headtail-${{ env.VERSION }}-windows.exe
 
       - name: Create Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create $VERSION \
-            --title "headtail $VERSION" \
-            --notes "Nightly build $VERSION" \
+          gh release create ${{ env.VERSION }} \
+            --title "headtail ${{ env.VERSION }}" \
+            --notes "Nightly build ${{ env.VERSION }}" \
             --draft
 
       - name: Upload Linux binary
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload $VERSION build/headtail-$VERSION-linux-x86_64 --clobber
+        run: gh release upload ${{ env.VERSION }} build/headtail-${{ env.VERSION }}-linux-x86_64 --clobber
 
       - name: Upload Windows exe
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload $VERSION headtail-$VERSION-windows.exe --clobber
+        run: gh release upload ${{ env.VERSION }} headtail-${{ env.VERSION }}-windows.exe --clobber
 
       - name: Upload RPM
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload $VERSION build/*.rpm --clobber
+        run: gh release upload ${{ env.VERSION }} build/*.rpm --clobber
 
       - name: Upload DEB
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload $VERSION build/*.deb --clobber
+        run: gh release upload ${{ env.VERSION }} build/*.deb --clobber
 
       - name: Upload TGZ
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload $VERSION build/*.tar.gz --clobber
+        run: gh release upload ${{ env.VERSION }} build/*.tar.gz --clobber
 
       - name: Set release as latest
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit $VERSION --latest
+        run: gh release edit ${{ env.VERSION }} --latest
