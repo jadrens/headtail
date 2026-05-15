@@ -1,0 +1,98 @@
+name: Publish Nightly Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., nightly, 1.1.0)'
+        required: true
+        default: 'nightly'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get current date
+        run: echo "DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+
+      - name: Build Linux
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+          cd build
+          cpack -G RPM
+          cpack -G DEB
+          cpack -G TGZ
+
+      - name: Build Windows
+        run: |
+          sudo apt-get update && sudo apt-get install -y mingw-w64 cmake
+          cmake -B build-windows \
+            -DCMAKE_SYSTEM_NAME=Windows \
+            -DCMAKE_CXX_COMPILER=i686-w64-mingw32-g++ \
+            -DCMAKE_RC_COMPILER=i686-w64-mingw32-wrc \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
+          cmake --build build-windows --config Release
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.version }}-${{ env.DATE }}"
+          # Delete previous release with same prefix
+          gh release list --exclude-drafts --json tagName --jq '.[].tagName' | grep "^${{ github.event.inputs.version }}-" | while read oldtag; do
+            echo "Deleting previous release: $oldtag"
+            gh release delete "$oldtag" --yes || true
+          done
+          gh release create "$TAG" \
+            --title "headtail $TAG" \
+            --notes "Nightly build $TAG"
+
+      - name: Upload Linux binary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.version }}-${{ env.DATE }}"
+          cp build/headtail "headtail-$TAG-linux-x86_64"
+          gh release upload "$TAG" "headtail-$TAG-linux-x86_64" --clobber
+
+      - name: Upload Windows exe
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.version }}-${{ env.DATE }}"
+          cp build-windows/headtail.exe "headtail-$TAG-windows.exe"
+          gh release upload "$TAG" "headtail-$TAG-windows.exe" --clobber
+
+      - name: Upload RPM
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.version }}-${{ env.DATE }}"
+          gh release upload "$TAG" build/*.rpm --clobber
+
+      - name: Upload DEB
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.version }}-${{ env.DATE }}"
+          gh release upload "$TAG" build/*.deb --clobber
+
+      - name: Upload TGZ
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.version }}-${{ env.DATE }}"
+          gh release upload "$TAG" build/*.tar.gz --clobber
+
+      - name: Set release as latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.version }}-${{ env.DATE }}"
+          gh release edit "$TAG" --latest || true
