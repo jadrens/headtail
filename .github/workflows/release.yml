@@ -1,0 +1,65 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "version=${TAG}" >> $GITHUB_OUTPUT
+          echo "major=$(echo $TAG | cut -d. -f1 | tr -d 'v')" >> $GITHUB_OUTPUT
+          echo "minor=$(echo $TAG | cut -d. -f2)" >> $GITHUB_OUTPUT
+          echo "patch=$(echo $TAG | cut -d. -f3)" >> $GITHUB_OUTPUT
+
+      - name: Build Linux packages
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+          cd build
+          cpack -G "RPM;DEB;TGZ"
+
+      - name: Build Windows (Cross-compile)
+        run: |
+          sudo apt-get update && sudo apt-get install -y mingw-w64 cmake
+          cmake -B build-windows \
+            -DCMAKE_SYSTEM_NAME=Windows \
+            -DCMAKE_CXX_COMPILER=i686-w64-mingw32-g++ \
+            -DCMAKE_RC_COMPILER=i686-w64-mingw32-wrc \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
+          cmake --build build-windows --config Release
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.version }}"
+
+          # Rename binaries for clarity
+          cp build/headtail "headtail-${TAG}-linux-x86_64"
+          cp build-windows/headtail.exe "headtail-${TAG}-windows.exe"
+
+          # Create release (draft mode for manual editing)
+          gh release create "$TAG" \
+            --title "headtail ${TAG}" \
+            --draft
+
+          # Upload all assets
+          gh release upload "$TAG" \
+            "headtail-${TAG}-linux-x86_64" \
+            "headtail-${TAG}-windows.exe" \
+            build/*.rpm \
+            build/*.deb \
+            build/*.tar.gz \
+            --clobber
