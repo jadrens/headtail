@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.15)
 project(headtail VERSION 1.0.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(headtail main.cpp src/i18n/i18n.cpp src/i18n/en.cpp src/i18n/zh.cpp)
+add_executable(headtail main.cpp src/args.cpp src/err.cpp src/process.cpp src/i18n/i18n.cpp src/i18n/en.cpp src/i18n/zh.cpp)
 
 target_compile_options(headtail PRIVATE -Wall -Wextra)
 
-target_include_directories(headtail PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(headtail PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/src/i18n)
 
 install(TARGETS headtail DESTINATION bin)
 

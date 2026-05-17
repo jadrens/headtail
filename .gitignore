@@ -4,6 +4,7 @@ build/
 *.a
 *.so
 *.dylib
+build-windows
 
 # Executables
 headtail

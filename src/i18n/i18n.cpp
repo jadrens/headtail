@@ -6,7 +6,11 @@
 #include "i18n.h"
 
 static std::string g_lang = "en";
-static std::unordered_map<std::string, std::pair<const LangEntry*, int>> g_strings;
+
+static std::unordered_map<std::string, std::pair<const LangEntry*, int>>& get_strings() {
+    static std::unordered_map<std::string, std::pair<const LangEntry*, int>> instance;
+    return instance;
+}
 
 static bool starts_with(const char* s, const char* prefix) {
     size_t slen = strlen(s);
@@ -29,13 +33,14 @@ std::string detect_lang(const std::string& locale) {
 }
 
 void register_lang_strings(const char* lang, const LangEntry* entries, int count) {
-    g_strings[lang] = {entries, count};
+    get_strings()[lang] = {entries, count};
 }
 
 const char* get_string(const char* key, const std::string& lang) {
-    auto it = g_strings.find(lang);
-    if (it == g_strings.end()) it = g_strings.find("en");
-    if (it == g_strings.end()) return key;
+    auto& strings = get_strings();
+    auto it = strings.find(lang);
+    if (it == strings.end()) it = strings.find("en");
+    if (it == strings.end()) return key;
 
     const LangEntry* entries = it->second.first;
     int count = it->second.second;
