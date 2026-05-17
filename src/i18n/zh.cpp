@@ -12,6 +12,8 @@ static const LangEntry local_strings[] = {
     {"opt_input", "  -i, --input 文件       从指定文件读取而非标准输入。"},
     {"opt_show_size", "  -s, --show-size        显示省略大小（自动单位 KiB, MiB 等）。"},
     {"opt_byte", "  --byte                 强制以原始字节显示省略大小。"},
+    {"opt_keyword", "  -k, --keyword 关键词  关键词触发立即输出（逗号分隔）。"},
+    {"opt_keyword_case", "  -K 关键词              大小写不敏感关键词匹配。"},
     {"opt_help", "  --help                 显示此帮助信息。"},
     {"err_invalid_arg", "错误: 参数 \"{1}\" 对 {0} 无效"},
     {"err_mode_duplicated", "错误: 模式重复指定。"},

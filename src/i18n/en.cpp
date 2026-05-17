@@ -12,6 +12,8 @@ static const LangEntry local_strings[] = {
     {"opt_input", "  -i, --input FILE       Read from FILE instead of standard input."},
     {"opt_show_size", "  -s, --show-size        Show omitted size with auto-scaling unit (KiB, MiB, etc)."},
     {"opt_byte", "  --byte                 Force showing omitted size in raw bytes."},
+    {"opt_keyword", "  -k, --keyword WORDS   Keywords to trigger immediate output (comma-separated)."},
+    {"opt_keyword_case", "  -K WORDS               Case-insensitive keyword matching."},
     {"opt_help", "  --help                 Show this help message."},
     {"err_invalid_arg", "Error: Invalid argument \"{1}\" for {0}"},
     {"err_mode_duplicated", "Error: Mode duplicated."},

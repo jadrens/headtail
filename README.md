@@ -35,4 +35,13 @@ cat file.txt | headtail -n 10
 
 # Show omitted content size
 headtail -s input.txt
+
+# Keyword matching (case-sensitive), trigger immediate output when keyword appears in tail buffer
+headtail -k error,warning input.txt
+
+# Case-insensitive keyword matching
+headtail -K error,Warning input.txt
+
+# Combine options
+headtail -n 10 -s -K error input.txt
 ```

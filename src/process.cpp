@@ -2,12 +2,17 @@
 #include "args.h"
 #include "err.h"
 #include "i18n.h"
+#include "utils/time.h"
+#include "utils/cmd.h"
 #include <iostream>
 #include <string>
 #include <deque>
 #include <fstream>
 #include <cstdlib>
 #include <climits>
+#include <poll.h>
+#include <unistd.h>
+#include <cctype>
 
 extern std::string g_lang;
 
@@ -76,15 +81,23 @@ void process_lines(std::istream& in) {
     uint64_t head_printed = 0;
     uint64_t head_bytes_printed = 0;
     uint64_t tail_bytes_stored = 0;
+    uint64_t total_lines = 0;
     std::deque<std::string> tail_buffer;
     std::string current_line;
+    char head_last_print_char;
     char last_char = '\n';
-    char chunk[8192];
+
+    uint64_t last_buffer_update_time;
+
 
     auto process_line = [&](const std::string& line) {
         uint64_t line_bytes = line.size();
+        total_lines++;
+
+
         if (head_printed < state.head_count) {
             std::cout << line;
+            head_last_print_char = line.back();
             if (!line.empty()) last_char = line.back();
             head_printed++;
             head_bytes_printed += line_bytes;
@@ -95,25 +108,80 @@ void process_lines(std::istream& in) {
                 tail_bytes_stored -= tail_buffer.front().size();
                 tail_buffer.pop_front();
             }
+            uint64_t now = get_time_ms();
+            if (now - last_buffer_update_time > 300){
+                std::string s = get_string("omit_lines", g_lang);
+                size_t p;
+                while ((p = s.find("{0}")) != std::string::npos) {
+                    s.replace(p, 3, std::to_string(total_lines - head_printed));
+                }
+                std::cout << std::string(get_console_width(), ' ') << "\r";
+                std::cout << ((head_last_print_char == '\n') ? "" : "\n") << s << "\r";
+                std::cout.flush();
+            }
+            if (!state.keywords.empty() || !state.keywords_case.empty()) {
+                std::string line_lower = line;
+                for (auto& c : line_lower) c = std::tolower(static_cast<unsigned char>(c));
+                for (const auto& kw : state.keywords) {
+                    if (line.find(kw) != std::string::npos) {
+                        std::cout << std::string(get_console_width(), ' ') << "\r";
+                        std::cout << line;
+                        std::cout.flush();
+                    }
+                }
+                for (const auto& kw : state.keywords_case) {
+                    if (line_lower.find(kw) != std::string::npos) {
+                        std::cout << std::string(get_console_width(), ' ') << "\r";
+                        std::cout << line;
+                        std::cout.flush();
+                    }
+                }
+            }
+            last_buffer_update_time = now;
         }
     };
 
-    while (in.read(chunk, sizeof(chunk)) || in.gcount() > 0) {
-        size_t len = in.gcount();
+    last_buffer_update_time = get_time_ms();
+
+    // Get file descriptor
+    int fd = -1;
+    bool is_file = false;
+
+    if (!state.input_file.empty()) {
+        is_file = true;
+    } else {
+        fd = STDIN_FILENO;
+    }
+
+    while (true) {
+        size_t len = 0;
+        char local_chunk[8192];
+
+        if (is_file) {
+            if (!in.read(local_chunk, sizeof(local_chunk)) && in.gcount() == 0) break;
+            len = in.gcount();
+        } else {
+            ssize_t r = ::read(fd, local_chunk, sizeof(local_chunk));
+            if (r <= 0) break;
+            len = r;
+        }
         total_bytes += len;
         for (size_t i = 0; i < len; i++) {
-            current_line += chunk[i];
-            if (chunk[i] == '\n') {
+            current_line += local_chunk[i];
+            if (local_chunk[i] == '\n') {
                 process_line(current_line);
                 current_line.clear();
             }
         }
     }
+    // 总行数始终等于 \n 加一
+    total_lines++;
+
+    // 处理最后一行
     if (!current_line.empty()) {
         process_line(current_line);
     }
 
-    uint64_t total_lines = head_printed + tail_buffer.size();
     if (total_lines > state.head_count + state.tail_count) {
         if (state.show_size) {
             uint64_t omitted = total_bytes - head_bytes_printed - tail_bytes_stored;
@@ -124,7 +192,7 @@ void process_lines(std::istream& in) {
             while ((p = s.find("{0}")) != std::string::npos) {
                 s.replace(p, 3, std::to_string(total_lines - head_printed - tail_buffer.size()));
             }
-            std::cout << "\n" << s << "\n";
+            std::cout << ((head_last_print_char == '\n') ? "" : "\n") << s << "\n";
         }
         last_char = '\n';
     }
@@ -164,7 +232,7 @@ void process_chars(std::istream& in) {
         }
     }
 
-    if (total_bytes > state.head_count + state.tail_count) {
+    if (total_bytes >= state.head_count + state.tail_count) {
         if (state.show_size) {
             uint64_t omitted = total_bytes - head_printed - tail_buf.size();
             print_omitted_size(omitted, state.force_byte);

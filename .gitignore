@@ -8,3 +8,8 @@ build-windows
 
 # Executables
 headtail
+
+
+aur-config/
+
+.claude/

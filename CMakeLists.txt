@@ -5,7 +5,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(headtail main.cpp src/args.cpp src/err.cpp src/process.cpp src/i18n/i18n.cpp src/i18n/en.cpp src/i18n/zh.cpp)
+file(GLOB_RECURSE HEADTAIL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+add_executable(headtail main.cpp ${HEADTAIL_SOURCES})
 
 target_compile_options(headtail PRIVATE -Wall -Wextra)
 
