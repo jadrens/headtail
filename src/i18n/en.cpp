@@ -3,7 +3,7 @@
 extern void register_lang_strings(const char* lang, const LangEntry* entries, int count);
 
 static const LangEntry local_strings[] = {
-    {"usage", "Usage: headtail [OPTIONS]..."},
+    {"usage", "Usage: headtail [OPTIONS]... [FILE]\n       headtail N [M]"},
     {"options", "Options:"},
     {"opt_n", "  -n [NUM]               Line mode (default), display NUM lines at head/tail."},
     {"opt_c", "  -c [NUM]               Byte/Char mode, display NUM bytes at head/tail."},

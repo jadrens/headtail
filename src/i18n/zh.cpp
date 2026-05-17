@@ -3,7 +3,7 @@
 extern void register_lang_strings(const char* lang, const LangEntry* entries, int count);
 
 static const LangEntry local_strings[] = {
-    {"usage", "用法: headtail [选项]..."},
+    {"usage", "用法: headtail [选项]... [文件]\n       headtail N [M]"},
     {"options", "选项:"},
     {"opt_n", "  -n [NUM]               行模式（默认），显示头/尾各 NUM 行。"},
     {"opt_c", "  -c [NUM]               字节模式，显示头/尾各 NUM 字节。"},

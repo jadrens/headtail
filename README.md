@@ -2,17 +2,20 @@
 
 A combined `head` and `tail` utility for displaying the beginning and end of files or stdin input.
 
-## Build
+## Install
 
+### Arch Linux (AUR)
+```bash
+yay -Sy headtail-git
+# or
+paru -S headtail-git
+```
+
+### From source
 ```bash
 cmake -B build
 cmake --build build
-```
-
-## Install
-
-```bash
-cmake --install build
+sudo cmake --install build
 ```
 
 ## Usage
@@ -21,27 +24,28 @@ cmake --install build
 # Show first and last 10 lines (default)
 headtail input.txt
 
-# Show first/last 20 lines
-headtail -n 20 input.txt
+# Fast mode: first arg is head count, second (optional) is tail count
+headtail 10 -i input.txt        # Show first and last 10 lines
+headtail 10 20 -i input.txt     # Show first 10 and last 20 lines
 
 # Different head and tail counts
 headtail -h 5 -t 15 input.txt
 
 # Byte mode instead of line mode
-headtail -c 100 input.txt
+headtail -c 100 -i input.txt
 
 # Read from stdin
 cat file.txt | headtail -n 10
 
 # Show omitted content size
-headtail -s input.txt
+headtail -s -i input.txt
 
 # Keyword matching (case-sensitive), trigger immediate output when keyword appears in tail buffer
-headtail -k error,warning input.txt
+headtail -k error,warning -i input.txt
 
 # Case-insensitive keyword matching
-headtail -K error,Warning input.txt
+headtail -K error,Warning -i input.txt
 
 # Combine options
-headtail -n 10 -s -K error input.txt
+headtail -n 10 -s -K error -i input.txt
 ```

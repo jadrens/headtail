@@ -87,16 +87,16 @@ jobs:
       - name: Test line mode
         run: |
           echo -e "line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10\nline11\nline12\nline13\nline14\nline15" > /tmp/test.txt
-          ./build/headtail -n 3 /tmp/test.txt | grep -q "line1"
-          ./build/headtail -n 3 /tmp/test.txt | grep -q "line13"
+          ./build/headtail -n 3 -i /tmp/test.txt | grep -q "line1"
+          ./build/headtail -n 3 -i /tmp/test.txt | grep -q "line13"
 
       - name: Test head/tail split
         run: |
           echo -e "line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10\nline11\nline12\nline13\nline14\nline15" > /tmp/test.txt
-          ./build/headtail -h 5 -t 3 /tmp/test.txt | grep -q "line1"
-          ./build/headtail -h 5 -t 3 /tmp/test.txt | grep -q "line13"
+          ./build/headtail -h 5 -t 3 -i /tmp/test.txt | grep -q "line1"
+          ./build/headtail -h 5 -t 3 -i /tmp/test.txt | grep -q "line13"
 
       - name: Test byte mode
         run: |
           dd if=/dev/zero of=/tmp/test.bin bs=100 count=1 2>/dev/null
-          ./build/headtail -c 20 /tmp/test.bin | grep -q "chars omitted"
+          ./build/headtail -c 20 -i /tmp/test.bin | grep -q "chars omitted"
