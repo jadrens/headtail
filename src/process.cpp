@@ -1,7 +1,7 @@
 #include "process.h"
 #include "args.h"
 #include "err.h"
-#include "i18n.h"
+#include "i18n/i18n.h"
 #include "utils/time.h"
 #include "utils/cmd.h"
 #include <iostream>

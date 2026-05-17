@@ -142,7 +142,7 @@ void parse_args(int argc, char* argv[]) {
     for (int i = 1; i < argc; i++) {
         args.push_back(argv[i]);
     }
-    if (args.front()[0] != '-') {
+    if (!args.empty() && args.front()[0] != '-') {
         // fast mode
         try {
             size_t first_error;
@@ -163,8 +163,10 @@ void parse_args(int argc, char* argv[]) {
             }
             args.pop_front();
         } catch (...) {
-            g_state.input_file = args.front();
-            args.pop_front();
+            if (!args.empty()) {
+                g_state.input_file = args.front();
+                args.pop_front();
+            }
         }
     }
 
