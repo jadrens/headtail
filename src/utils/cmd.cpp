@@ -1,38 +1,59 @@
 #include <stdio.h>
+#include <string.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <sys/ioctl.h>
 #include <unistd.h>
+#endif
 
-// Function to get console width
 int get_console_width(void) {
+#ifdef _WIN32
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+        return csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    }
+    return 80;
+#else
     struct winsize w;
-    
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) != -1) {
         return w.ws_col;
     }
-    
-    return 80; // Default width if unable to get
+    return 80;
+#endif
 }
 
-// Function to get console height
 int get_console_height(void) {
+#ifdef _WIN32
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+        return csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+    }
+    return 24;
+#else
     struct winsize w;
-    
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) != -1) {
         return w.ws_row;
     }
-    
-    return 24; // Default height if unable to get
+    return 24;
+#endif
 }
 
-// Function to get complete console information
 int get_console_size(struct winsize *w) {
-    if (w == NULL) {
-        return -1;
+    if (w == NULL) return -1;
+#ifdef _WIN32
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+        w->ws_col = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+        w->ws_row = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+        return 0;
     }
-    
+    return -1;
+#else
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, w) != -1) {
-        return 0; // Success
+        return 0;
     }
-    
-    return -1; // Failure
+    return -1;
+#endif
 }
