@@ -10,9 +10,14 @@
 #include <fstream>
 #include <cstdlib>
 #include <climits>
+#ifndef _WIN32
 #include <poll.h>
 #include <unistd.h>
+#endif
 #include <cctype>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 extern std::string g_lang;
 
@@ -150,7 +155,9 @@ void process_lines(std::istream& in) {
     if (!state.input_file.empty()) {
         is_file = true;
     } else {
+#ifndef _WIN32
         fd = STDIN_FILENO;
+#endif
     }
 
     while (true) {
@@ -161,9 +168,18 @@ void process_lines(std::istream& in) {
             if (!in.read(local_chunk, sizeof(local_chunk)) && in.gcount() == 0) break;
             len = in.gcount();
         } else {
+#ifdef _WIN32
+            HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
+            DWORD bytesRead = 0;
+            if (!ReadFile(hStdIn, local_chunk, sizeof(local_chunk), &bytesRead, NULL) || bytesRead == 0) {
+                break;
+            }
+            len = bytesRead;
+#else
             ssize_t r = ::read(fd, local_chunk, sizeof(local_chunk));
             if (r <= 0) break;
             len = r;
+#endif
         }
         total_bytes += len;
         for (size_t i = 0; i < len; i++) {

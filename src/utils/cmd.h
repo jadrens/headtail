@@ -9,4 +9,8 @@
 
 int get_console_width(void);
 int get_console_height(void);
+#ifdef _WIN32
+int get_console_size(int *cols, int *rows);
+#else
 int get_console_size(struct winsize *w);
+#endif
