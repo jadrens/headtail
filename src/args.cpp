@@ -45,7 +45,7 @@ bool is_flag(const std::string& s) {
 
 static void require_arg(int& i, int argc, std::deque<std::string>& args, const char* flag) {
     if (++i >= argc || is_flag(args[i])) err_exit("err_missing_arg", flag);
-    if (g_state.mode == AppState::Mode::CHARS) err_exit("err_mode_duplicated");
+    // Note: removed erroneous mode duplication check - input file can be used with any mode
 }
 
 uint64_t do_parse_num(const std::string& val, const std::string& arg_name);
