@@ -13,6 +13,7 @@ on:
 
 jobs:
   release:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -22,11 +23,12 @@ jobs:
       - name: Get version from tag
         id: version
         run: |
-          TAG="${GITHUB_REF#refs/tags/}"
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            TAG="${{ github.event.inputs.version }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
           echo "version=${TAG}" >> $GITHUB_OUTPUT
-          echo "major=$(echo $TAG | cut -d. -f1 | tr -d 'v')" >> $GITHUB_OUTPUT
-          echo "minor=$(echo $TAG | cut -d. -f2)" >> $GITHUB_OUTPUT
-          echo "patch=$(echo $TAG | cut -d. -f3)" >> $GITHUB_OUTPUT
 
       - name: Build Linux packages
         run: |
